@@ -459,8 +459,8 @@ describe 'gitlab_ci_runner', type: :class do
         it { is_expected.to contain_class('gitlab_ci_runner::repo') }
 
         it do
-            is_expected.to contain_apt__keyring('apt_gitlabci')
-            is_expected.to contain_apt__source('apt_gitlabci')
+          is_expected.to contain_apt__keyring('apt_gitlabci')
+          is_expected.to contain_apt__source('apt_gitlabci')
         end
       end
     end
