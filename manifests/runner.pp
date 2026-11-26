@@ -97,6 +97,9 @@ define gitlab_ci_runner::runner (
     # Fail if the user supplied configuration options which are meant for the registration, but not for the config file
     $_config.keys.each |$key| {
       if $key in Array(Gitlab_ci_runner::Register_parameters) {
+        if $_config['token'] {
+          fail("\$config contains the configuration key '${key}'. A runner authentication token cannot set registration options, configure them for the runner in GitLab or use the legacy 'registration-token' flow.")
+        }
         fail("\$config contains a configuration key (${key}) which is meant for the registration, but not for the config file. Please remove it or add a 'registration-token'!")
       }
     }
@@ -116,7 +119,14 @@ define gitlab_ci_runner::runner (
       content => $content,
     }
   } else {
-    $absent_content = Deferred('gitlab_ci_runner::unregister_from_file', [$_config['url'], $_config['name'], $http_proxy, $ca_file])
+    # In the new registration flow the authentication token is already in the catalog,
+    # so pass it to the unregistration function. In the legacy flow the token only
+    # exists in the local token file and is read there.
+    $unregister_args = $_config['registration-token'] ? {
+      undef   => [$_config['url'], $_config['name'], $http_proxy, $ca_file, $_config['token']],
+      default => [$_config['url'], $_config['name'], $http_proxy, $ca_file],
+    }
+    $absent_content = Deferred('gitlab_ci_runner::unregister_from_file', $unregister_args)
 
     file { "/etc/gitlab-runner/auth-token-${_config['name']}":
       ensure  => absent,

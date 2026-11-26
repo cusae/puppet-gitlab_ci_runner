@@ -739,7 +739,7 @@ file { '/etc/gitlab-runner/auth-token-testrunner':
 }
 ```
 
-#### `gitlab_ci_runner::unregister_from_file(String[1] $url, String[1] $runner_name, Optional[Optional[String[1]]] $proxy, Optional[Optional[String[1]]] $ca_file)`
+#### `gitlab_ci_runner::unregister_from_file(String[1] $url, String[1] $runner_name, Optional[Optional[String[1]]] $proxy, Optional[Optional[String[1]]] $ca_file, Optional[Optional[String[1]]] $token)`
 
 A function that unregisters a Gitlab runner from a Gitlab instance, if the local token is there.
 This is meant to be used in conjunction with the gitlab_ci_runner::register_to_file function.
@@ -780,6 +780,12 @@ HTTP proxy to use when unregistering
 Data type: `Optional[Optional[String[1]]]`
 
 An absolute path to a trusted certificate authority file.
+
+##### `token`
+
+Data type: `Optional[Optional[String[1]]]`
+
+Runner authentication token. If not set, the token is read from the local token file.
 
 ## Data types
 

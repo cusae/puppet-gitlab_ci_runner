@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'spec_helper'
+require 'webmock/rspec'
 
 describe 'gitlab_ci_runner::runner' do
   on_supported_os.each do |os, facts|
@@ -162,6 +163,79 @@ describe 'gitlab_ci_runner::runner' do
               '[[runners]]',
               'name = "foo-runner"',
             ],
+          )
+        end
+      end
+
+      context 'with authentication token and ensure absent' do
+        let(:params) do
+          {
+            config: {
+              url: 'https://gitlab.com',
+              token: 'glrt-authentication-token',
+              executor: 'shell',
+            },
+            ensure: 'absent',
+          }
+        end
+
+        before do
+          stub_request(:delete, 'https://gitlab.com/api/v4/runners').to_return(status: 204, body: '')
+        end
+
+        it 'unregisters the runner with the authentication token' do
+          is_expected.to compile.with_all_deps
+
+          content = catalogue.resource('File', '/etc/gitlab-runner/auth-token-testrunner')[:content]
+
+          expect(content).to eq('Successfully unregistered gitlab runner testrunner')
+          expect(
+            a_request(:delete, 'https://gitlab.com/api/v4/runners').with(body: { 'token' => 'glrt-authentication-token' }.to_json),
+          ).to have_been_made
+        end
+      end
+
+      context 'with registration token and ensure absent' do
+        let(:params) do
+          {
+            config: {
+              url: 'https://gitlab.com',
+              'registration-token': 'registration-token',
+            },
+            ensure: 'absent',
+          }
+        end
+
+        before do
+          allow(File).to receive(:exist?).and_call_original
+          allow(File).to receive(:exist?).with('/etc/gitlab-runner/auth-token-testrunner').and_return(false)
+          allow(Puppet).to receive(:warning)
+        end
+
+        it 'does not unregister without a local token file' do
+          is_expected.to compile.with_all_deps
+
+          content = catalogue.resource('File', '/etc/gitlab-runner/auth-token-testrunner')[:content]
+
+          expect(content).to eq('/etc/gitlab-runner/auth-token-testrunner file doesn\'t exist, not unregistering gitlab runner testrunner')
+          expect(a_request(:delete, 'https://gitlab.com/api/v4/runners')).not_to have_been_made
+        end
+      end
+
+      context 'with authentication token and a registration option' do
+        let(:params) do
+          {
+            config: {
+              url: 'https://gitlab.com',
+              token: 'glrt-authentication-token',
+              'tag-list': 'docker,aws',
+            },
+          }
+        end
+
+        it do
+          is_expected.to compile.and_raise_error(
+            %r{\$config contains the configuration key 'tag-list'\. A runner authentication token cannot set registration options},
           )
         end
       end

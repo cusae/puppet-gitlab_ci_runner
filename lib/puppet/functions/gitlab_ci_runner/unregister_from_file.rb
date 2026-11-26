@@ -9,6 +9,7 @@ Puppet::Functions.create_function(:'gitlab_ci_runner::unregister_from_file') do
   # @param runner_name The name of the runner. Use as identifier for the retrived auth token.
   # @param proxy HTTP proxy to use when unregistering
   # @param ca_file An absolute path to a trusted certificate authority file.
+  # @param token Runner authentication token. If not set, the token is read from the local token file.
   # @example Using it as a Deferred function with a file resource
   #   file { '/etc/gitlab-runner/auth-token-testrunner':
   #     file    => absent,
@@ -21,13 +22,23 @@ Puppet::Functions.create_function(:'gitlab_ci_runner::unregister_from_file') do
     param 'String[1]', :runner_name
     optional_param 'Optional[String[1]]', :proxy
     optional_param 'Optional[String[1]]', :ca_file # This function will be deferred so can't use types from stdlib etc.
+    optional_param 'Optional[String[1]]', :token
   end
 
-  def unregister_from_file(url, runner_name, proxy = nil, ca_file = nil)
+  def unregister_from_file(url, runner_name, proxy = nil, ca_file = nil, token = nil)
     filename = "/etc/gitlab-runner/auth-token-#{runner_name}"
-    return "#{filename} file doesn't exist" unless File.exist?(filename)
+    if token.nil?
+      unless File.exist?(filename)
+        message = "#{filename} file doesn't exist, not unregistering gitlab runner #{runner_name}"
+        Puppet.warning message
+        return message
+      end
 
-    authtoken = File.read(filename).strip
+      authtoken = File.read(filename).strip
+    else
+      authtoken = token
+    end
+
     if Puppet.settings[:noop]
       message = "Not unregistering gitlab runner #{runner_name} when in noop mode"
       Puppet.debug message

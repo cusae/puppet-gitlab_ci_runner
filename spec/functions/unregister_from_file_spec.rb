@@ -41,12 +41,44 @@ describe 'gitlab_ci_runner::unregister_from_file' do
     end
   end
 
-  context "does nothing if file doesn't exist" do
+  context "does nothing if file doesn't exist and no token is given" do
     before do
       allow(File).to receive(:exist?).and_call_original
       allow(File).to receive(:exist?).with(filename).and_return(false)
     end
 
-    it { is_expected.to run.with_params(url, runner_name).and_return('/etc/gitlab-runner/auth-token-testrunner file doesn\'t exist') }
+    it do
+      allow(Puppet).to receive(:warning)
+      is_expected.to run.with_params(url, runner_name).and_return('/etc/gitlab-runner/auth-token-testrunner file doesn\'t exist, not unregistering gitlab runner testrunner')
+      expect(Puppet).to have_received(:warning).with('/etc/gitlab-runner/auth-token-testrunner file doesn\'t exist, not unregistering gitlab runner testrunner')
+    end
+  end
+
+  context 'uses the given authentication token to unregister the runner' do
+    let(:authtoken) { 'glrt-authentication-token' }
+
+    before do
+      allow(File).to receive(:exist?).and_call_original
+      allow(File).to receive(:exist?).with(filename).and_return(false)
+      allow(PuppetX::Gitlab::Runner).to receive(:unregister).with(url, { 'token' => authtoken }, nil, nil).and_return(nil)
+    end
+
+    it { is_expected.to run.with_params(url, runner_name, nil, nil, authtoken).and_return('Successfully unregistered gitlab runner testrunner') }
+
+    context 'with existing file ca_file option' do
+      before do
+        allow(PuppetX::Gitlab::Runner).to receive(:unregister).with(url, { 'token' => authtoken }, nil, '/tmp').and_return(nil)
+      end
+
+      it { is_expected.to run.with_params(url, runner_name, nil, '/tmp', authtoken).and_return('Successfully unregistered gitlab runner testrunner') }
+    end
+
+    context 'with non existent ca_file option' do
+      before do
+        allow(PuppetX::Gitlab::Runner).to receive(:unregister).with(url, { 'token' => authtoken }, nil, '/path/to/ca_file').and_return(nil)
+      end
+
+      it { is_expected.to run.with_params(url, runner_name, nil, '/path/to/ca_file', authtoken).and_return('Specified CA file doesn\'t exist, not attempting to create authtoken') }
+    end
   end
 end

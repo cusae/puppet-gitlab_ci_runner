@@ -86,6 +86,8 @@ This module is aware of this but needs some slight changes to the runners config
 
 Please note that one can reuse the same authentication token multiple times.
 
+The module does not call the GitLab API for this flow. The token is written to `config.toml` as is, and `ensure => absent` unregisters the runner with the same token. Registration options like `tag-list` cannot be set with an authentication token; configure them for the runner in GitLab. The module fails if such an option is present.
+
 ```yaml
 gitlab_ci_runner::runners:
   test_runner1:{}
