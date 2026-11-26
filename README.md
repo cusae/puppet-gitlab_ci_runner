@@ -75,11 +75,13 @@ gitlab_ci_runner::runners:
 ## New GitLab Runner creation and registration process
 
 GitLab 15.10 introduced a new runner workflow with runner authentication tokens.
-In this workflow GitLab requires the runner to exist before it can be used. The module does not create runners and never calls `POST /api/v4/runners`.
+In this workflow GitLab requires the runner to exist before it can be used. The module does not create the runner.
 
-1. Create the runner in the GitLab UI, or with `POST /user/runners` and an access token that has the `manage_runner` scope. See [Automate runner creation and registration](https://docs.gitlab.com/tutorials/automate_runner_creation/).
-2. Set the returned authentication token (`glrt-...`) as `token` in the runner configuration. Remove `registration-token` and registration-only options such as `tag-list`, `run-untagged`, `description` and `access-level`; set those when you create the runner.
+1. Create the runner in the GitLab UI, or with `POST /user/runners`, using an access token that has the `create_runner` scope. You must be an administrator, or have the Owner role for the target namespace or project. See [Automate runner creation and registration](https://docs.gitlab.com/tutorials/automate_runner_creation/).
+2. Set the returned authentication token (`glrt-...`) as `token` in the runner configuration. Remove `registration-token` and registration-only options such as `tag-list`, `run-untagged`, `description` and `access-level`; set those when you create the runner. The module fails if such an option is present.
 3. Apply the module. It writes the token to `config.toml` and does not call the GitLab API, so it does not validate the token. An invalid token fails when the runner starts, not during the Puppet run.
+
+If both `registration-token` and `token` are set, `registration-token` takes precedence and the module uses the legacy flow.
 
 With `ensure => absent` the module unregisters the runner with the same token. It does not need the legacy `/etc/gitlab-runner/auth-token-<name>` file.
 

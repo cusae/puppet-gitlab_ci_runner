@@ -15,8 +15,9 @@
 #		class { 'gitlab_ci_runner':
 #		  runners => {
 #		 	 example_runner => {
-#		 		 'token' => 'glrt-gitlab-token',
-#		 		 'url'   => 'https://gitlab.com',
+#		 		 'token'    => 'glrt-gitlab-token',
+#		 		 'url'      => 'https://gitlab.com',
+#		 		 'executor' => 'shell',
 #		 	 },
 #		  },
 #		}
