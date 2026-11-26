@@ -59,6 +59,7 @@
 #   Hash with configuration options.
 #   See https://docs.gitlab.com/runner/configuration/advanced-configuration.html for all possible options.
 #   If you omit the 'name' configuration, we will automatically use the $title of this define class.
+#   Set `token` to a runner authentication token for the new registration flow, or `registration-token` to let the module register the runner through the legacy flow.
 #
 # @param ensure
 #   If the runner should be 'present' or 'absent'.

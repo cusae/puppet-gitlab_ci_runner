@@ -74,19 +74,16 @@ gitlab_ci_runner::runners:
 
 ## New GitLab Runner creation and registration process
 
-GitLab version 15.10 introduced a new runner registration process using authentication token.
+GitLab 15.10 introduced a new runner workflow with runner authentication tokens.
+In this workflow GitLab requires the runner to exist before it can be used. The module does not create runners and never calls `POST /api/v4/runners`.
 
-The authentication token can be obtained from GitLab using the `user/runners` API endpoint.
-More information can be found on the [GitLab Tutorial: Automate runner creation and registration ](https://docs.gitlab.com/tutorials/automate_runner_creation/)
+1. Create the runner in the GitLab UI, or with `POST /user/runners` and an access token that has the `manage_runner` scope. See [Automate runner creation and registration](https://docs.gitlab.com/tutorials/automate_runner_creation/).
+2. Set the returned authentication token (`glrt-...`) as `token` in the runner configuration. Remove `registration-token` and registration-only options such as `tag-list`, `run-untagged`, `description` and `access-level`; set those when you create the runner.
+3. Apply the module. It writes the token to `config.toml` and does not call the GitLab API, so it does not validate the token. An invalid token fails when the runner starts, not during the Puppet run.
 
-This module is aware of this but needs some slight changes to the runners configuration:
+With `ensure => absent` the module unregisters the runner with the same token. It does not need the legacy `/etc/gitlab-runner/auth-token-<name>` file.
 
-1. switch from `registration-token` to `token`
-2. remove deprecated `tag-list` config option - this must be specified when registering a runner in GitLab
-
-Please note that one can reuse the same authentication token multiple times.
-
-The module does not call the GitLab API for this flow. The token is written to `config.toml` as is, and `ensure => absent` unregisters the runner with the same token. Registration options like `tag-list` cannot be set with an authentication token; configure them for the runner in GitLab. The module fails if such an option is present.
+You can reuse the same authentication token on multiple machines.
 
 ```yaml
 gitlab_ci_runner::runners:
@@ -94,15 +91,25 @@ gitlab_ci_runner::runners:
   test_runner2:{}
   test_runner3:
     url: "https://git.alternative.org/ci"
-    token: "abcdef1234567890"
+    token: "glrt-abcdef1234567890"
     ca_file: "/etc/pki/cert/foo.pem"
 
 gitlab_ci_runner::runner_defaults:
   url: "https://git.example.com/ci"
-  token: "1234567890abcdef"
+  token: "glrt-1234567890abcdef"
   executor: "docker"
   docker:
     image: "ubuntu:focal"
+```
+
+To unregister a runner that uses an authentication token, use `ensure => absent` as in the legacy flow:
+
+```yaml
+gitlab_ci_runner::runners:
+  test_runner3:
+    url: "https://git.alternative.org/ci"
+    token: "glrt-abcdef1234567890"
+    ensure: absent
 ```
 
 ## SLES

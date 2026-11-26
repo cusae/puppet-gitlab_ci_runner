@@ -1,6 +1,6 @@
 # @summary This module installs and configures Gitlab CI Runners.
 #
-# @example Simple runner registration
+# @example Legacy runner registration with a registration token
 #		class { 'gitlab_ci_runner':
 #		  runners => {
 #		 	 example_runner => {
@@ -11,8 +11,19 @@
 #		  },
 #		}
 #
+# @example New runner workflow with an authentication token
+#		class { 'gitlab_ci_runner':
+#		  runners => {
+#		 	 example_runner => {
+#		 		 'token' => 'glrt-gitlab-token',
+#		 		 'url'   => 'https://gitlab.com',
+#		 	 },
+#		  },
+#		}
+#
 # @param runners
 #   Hashkeys are used as $title in runners.pp. The subkeys have to be named as the parameter names from ´gitlab-runner register´ command cause they're later joined to one entire string using 2 hyphen to look like shell command parameters. See ´https://docs.gitlab.com/runner/register/#one-line-registration-command´ for details.
+#   For the new runner workflow, set `token` to a runner authentication token instead of `registration-token`. The module then writes the token to the configuration file without calling the GitLab API.
 # @param runner_defaults
 #   A hash with defaults which will be later merged with $runners.
 # @param xz_package_name

@@ -51,7 +51,7 @@ This module installs and configures Gitlab CI Runners.
 
 #### Examples
 
-##### Simple runner registration
+##### Legacy runner registration with a registration token
 
 ```puppet
 class { 'gitlab_ci_runner':
@@ -60,6 +60,19 @@ class { 'gitlab_ci_runner':
  		 'registration-token' => 'gitlab-token',
  		 'url'                => 'https://gitlab.com',
  		 'tag-list'           => 'docker,aws',
+ 	 },
+  },
+}
+```
+
+##### New runner workflow with an authentication token
+
+```puppet
+class { 'gitlab_ci_runner':
+  runners => {
+ 	 example_runner => {
+ 		 'token' => 'glrt-gitlab-token',
+ 		 'url'   => 'https://gitlab.com',
  	 },
   },
 }
@@ -109,6 +122,7 @@ The following parameters are available in the `gitlab_ci_runner` class:
 Data type: `Hash`
 
 Hashkeys are used as $title in runners.pp. The subkeys have to be named as the parameter names from ´gitlab-runner register´ command cause they're later joined to one entire string using 2 hyphen to look like shell command parameters. See ´https://docs.gitlab.com/runner/register/#one-line-registration-command´ for details.
+For the new runner workflow, set `token` to a runner authentication token instead of `registration-token`. The module then writes the token to the configuration file without calling the GitLab API.
 
 Default value: `{}`
 
@@ -475,6 +489,7 @@ Data type: `Hash`
 Hash with configuration options.
 See https://docs.gitlab.com/runner/configuration/advanced-configuration.html for all possible options.
 If you omit the 'name' configuration, we will automatically use the $title of this define class.
+Set `token` to a runner authentication token for the new registration flow, or `registration-token` to let the module register the runner through the legacy flow.
 
 ##### <a name="-gitlab_ci_runner--runner--ensure"></a>`ensure`
 
